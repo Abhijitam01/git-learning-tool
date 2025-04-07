@@ -4,8 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "dev": "tsx server/index.ts",
+  "build": "vite build",
+  "start": "NODE_ENV=production node dist/server/index.js",
+  "db:push": "drizzle-kit push:pg",
+  "db:studio": "drizzle-kit studio"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
