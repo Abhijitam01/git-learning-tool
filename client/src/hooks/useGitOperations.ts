@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useGit } from '@/context/GitContext';
-import { useToast } from '../hooks/use-toast';
-
-export type GitBlockType = 'commit' | 'branch' | 'merge' | 'checkout' | 'revert' | 'issue';
+import { GitBlockType } from '@/components/GitLearningTool/types';
+import { useLesson } from '@/context/LessonContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface FormState {
   isOpen: boolean;
@@ -19,12 +19,7 @@ interface UseGitOperationsReturn {
 }
 
 export function useGitOperations(): UseGitOperationsReturn {
-  const [formState, setFormState] = useState<FormState>({
-    isOpen: false,
-    blockType: null,
-    inputs: {},
-  });
-  
+  const { toast } = useToast();
   const { 
     createCommit, 
     createBranch, 
@@ -34,85 +29,161 @@ export function useGitOperations(): UseGitOperationsReturn {
     createIssue 
   } = useGit();
   
-  const { toast } = useToast();
+  const { currentLesson, lessonProgress, nextStep } = useLesson();
   
+  const [formState, setFormState] = useState<FormState>({
+    isOpen: false,
+    blockType: null,
+    inputs: {}
+  });
+
   const openForm = (blockType: GitBlockType) => {
+    // Initialize with empty inputs
     setFormState({
       isOpen: true,
       blockType,
-      inputs: {},
+      inputs: {}
     });
   };
-  
+
   const closeForm = () => {
     setFormState({
-      ...formState,
       isOpen: false,
+      blockType: null,
+      inputs: {}
     });
   };
-  
+
   const handleInputChange = (name: string, value: string) => {
-    setFormState({
-      ...formState,
+    setFormState(prev => ({
+      ...prev,
       inputs: {
-        ...formState.inputs,
-        [name]: value,
-      },
-    });
+        ...prev.inputs,
+        [name]: value
+      }
+    }));
   };
-  
+
+  const validateInputs = (): boolean => {
+    const { blockType, inputs } = formState;
+    
+    if (!blockType) return false;
+    
+    switch (blockType) {
+      case 'commit':
+        return !!inputs.message;
+      case 'branch':
+        return !!inputs.name;
+      case 'merge':
+        return !!inputs.sourceBranch;
+      case 'checkout':
+        return !!inputs.target;
+      case 'revert':
+        return !!inputs.commitId;
+      case 'issue':
+        return !!inputs.title;
+      default:
+        return false;
+    }
+  };
+
   const executeOperation = (): boolean => {
-    if (!formState.blockType) return false;
+    const { blockType, inputs } = formState;
+    
+    if (!blockType || !validateInputs()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return false;
+    }
     
     try {
-      switch (formState.blockType) {
+      switch (blockType) {
         case 'commit':
-          createCommit(formState.inputs.message);
+          createCommit(inputs.message);
+          toast({
+            title: "Success",
+            description: `Created commit: ${inputs.message}`,
+          });
           break;
+          
         case 'branch':
-          createBranch(formState.inputs.name);
+          createBranch(inputs.name);
+          toast({
+            title: "Success",
+            description: `Created branch: ${inputs.name}`,
+          });
           break;
+          
         case 'merge':
-          mergeBranch(formState.inputs.sourceBranch);
+          mergeBranch(inputs.sourceBranch);
+          toast({
+            title: "Success",
+            description: `Merged branch: ${inputs.sourceBranch}`,
+          });
           break;
+          
         case 'checkout':
-          checkout(formState.inputs.target);
+          checkout(inputs.target);
+          toast({
+            title: "Success",
+            description: `Checked out: ${inputs.target}`,
+          });
           break;
+          
         case 'revert':
-          revertCommit(formState.inputs.commitId);
+          revertCommit(inputs.commitId);
+          toast({
+            title: "Success",
+            description: `Reverted commit: ${inputs.commitId}`,
+          });
           break;
+          
         case 'issue':
-          createIssue(
-            formState.inputs.title,
-            formState.inputs.description
-          );
+          createIssue(inputs.title, inputs.description || '');
+          toast({
+            title: "Success",
+            description: `Created issue: ${inputs.title}`,
+          });
           break;
+          
         default:
           return false;
       }
       
-      toast({
-        title: "Success",
-        description: `${formState.blockType} operation completed successfully.`,
-      });
+      // If we're in a lesson, check if this operation completes the current step
+      if (currentLesson) {
+        const progress = lessonProgress[currentLesson.id];
+        const currentStep = currentLesson.steps[progress.currentStep - 1];
+        
+        if (currentStep.action === blockType) {
+          nextStep();
+          toast({
+            title: "Lesson Progress",
+            description: "Great job! Moving to the next step.",
+          });
+        }
+      }
       
       closeForm();
       return true;
     } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to execute ${formState.blockType} operation.`,
-        variant: "destructive",
+        description: `Operation failed: ${(error as Error).message}`,
+        variant: "destructive"
       });
       return false;
     }
   };
-  
+
   return {
     formState,
     openForm,
     closeForm,
     handleInputChange,
-    executeOperation,
+    executeOperation
   };
 }
