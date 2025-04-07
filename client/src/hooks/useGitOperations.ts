@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGit } from '@/context/GitContext';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '../hooks/use-toast';
 
 export type GitBlockType = 'commit' | 'branch' | 'merge' | 'checkout' | 'revert' | 'issue';
 

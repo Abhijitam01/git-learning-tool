@@ -1,9 +1,9 @@
 import { useLesson } from '@/context/LessonContext';
 import { useGit } from '@/context/GitContext';
-import { Button } from '@/components/ui/button';
+import { Button } from '../../components/ui/button';
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
 
 const InstructionPanel: React.FC = () => {
   const { currentLesson, lessonProgress, nextStep, previousStep, checkStepCompletion } = useLesson();

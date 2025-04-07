@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useGit } from '@/context/GitContext';
 import { useLesson } from '@/context/LessonContext';
-import { useGitOperations, GitBlockType } from '@/hooks/useGitOperations';
-import { useToast } from '@/hooks/use-toast';
+import { useGitOperations, GitBlockType } from '../hooks/useGitOperations';
+import { useToast } from '../hooks/use-toast';
 
 import GitBlocks from '@/components/GitLearningTool/GitBlocks';
 import GitVisualization from '@/components/GitLearningTool/GitVisualization';
