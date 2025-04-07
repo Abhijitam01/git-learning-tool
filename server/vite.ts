@@ -1,64 +1,85 @@
-import { Express } from 'express';
-import { Server } from 'http';
-import { createServer as createViteServer } from 'vite';
-import fs from 'fs';
-import path from 'path';
+import express, { type Express } from "express";
+import fs from "fs";
+import path from "path";
+import { createServer as createViteServer, createLogger } from "vite";
+import { type Server } from "http";
+import viteConfig from "../vite.config";
+import { nanoid } from "nanoid";
+
+const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
-  const time = new Date().toLocaleTimeString();
-  console.log(`${time} [${source}] ${message}`);
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  console.log(`${formattedTime} [${source}] ${message}`);
 }
 
 export async function setupVite(app: Express, server: Server) {
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true,
+  };
+
   const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa',
-    root: path.resolve(process.cwd()),
+    ...viteConfig,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      },
+    },
+    server: serverOptions,
+    appType: "custom",
   });
 
   app.use(vite.middlewares);
-
-  app.use('*', async (req, res, next) => {
+  app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
-    
-    try {
-      // If the request is for API or other non-page routes, skip
-      if (url.startsWith('/api')) {
-        return next();
-      }
 
-      // Read the index.html file
-      let template = fs.readFileSync(
-        path.resolve(process.cwd(), 'client/index.html'),
-        'utf-8'
+    try {
+      const clientTemplate = path.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html",
       );
 
-      // Apply Vite HTML transforms
-      template = await vite.transformIndexHtml(url, template);
-
-      // Send the transformed HTML
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      // always reload the index.html file from disk incase it changes
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`,
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
-      // If an error is caught, let Vite fix the stack trace
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
   });
-
-  return server;
 }
 
 export function serveStatic(app: Express) {
-  const clientOutDir = path.resolve(process.cwd(), 'dist/client');
-  
-  app.use('/', express.static(clientOutDir));
+  const distPath = path.resolve(import.meta.dirname, "public");
 
-  app.get('*', (req, res) => {
-    // For SPA routing, serve the index.html for all non-file/non-api paths
-    if (!req.path.includes('.') && !req.path.startsWith('/api')) {
-      res.sendFile(path.join(clientOutDir, 'index.html'));
-    } else {
-      res.status(404).send('Not found');
-    }
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+    );
+  }
+
+  app.use(express.static(distPath));
+
+  // fall through to index.html if the file doesn't exist
+  app.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

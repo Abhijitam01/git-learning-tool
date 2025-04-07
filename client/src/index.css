@@ -2,58 +2,371 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --primary: 33 133 242;
-  --primary-foreground: 255 255 255;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
   
-  --secondary: 244 245 246;
-  --secondary-foreground: 24 24 27;
-  
-  --background: 255 255 255;
-  --foreground: 24 24 27;
-  
-  --card: 255 255 255;
-  --card-foreground: 24 24 27;
-  
-  --popover: 255 255 255;
-  --popover-foreground: 24 24 27;
-  
-  --muted: 242 242 242;
-  --muted-foreground: 113 113 122;
-  
-  --accent: 244 245 246;
-  --accent-foreground: 24 24 27;
-  
-  --destructive: 239 68 68;
-  --destructive-foreground: 255 255 255;
-  
-  --border: 228 228 231;
-  --input: 228 228 231;
-  --ring: 33 133 242;
-  
-  --radius: 0.5rem;
+  /* Default animations for all elements with a transition property */
+  [style*="transition"] {
+    transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-}
-
-.speech-bubble {
-  @apply rounded-xl p-4;
-  position: relative;
-}
-
-.lesson-progress-bar {
-  @apply h-2 bg-gray-200 rounded-full overflow-hidden;
-}
-
-.lesson-progress-value {
-  @apply h-full bg-blue-500 transition-all duration-300 ease-out;
+/* MusicBlocks-inspired styling */
+@layer components {
+  /* Music Blocks specific styling */
+  .music-block {
+    @apply relative rounded-md overflow-hidden transition-all duration-300 ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .music-block:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translate(1px, -1px);
+  }
+  
+  .music-block:active {
+    transform: translate(0px, 1px);
+  }
+  
+  /* Input fields in blocks - MusicBlocks style */
+  .block-input {
+    @apply font-medium transition-all relative;
+  }
+  
+  .block-input:hover {
+    @apply brightness-105;
+    transform: translateX(2px);
+  }
+  
+  .block-body {
+    @apply py-2 relative;
+  }
+  
+  /* Enhanced ripple effects for MusicBlocks style */
+  .ripple-container {
+    @apply overflow-hidden relative;
+  }
+  
+  /* Git visualization styling - MusicBlocks style */
+  .git-node {
+    @apply stroke-2 cursor-pointer transition-all duration-200;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  }
+  
+  .git-node:hover {
+    @apply stroke-[3px] shadow-lg;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)) brightness(1.05);
+    transform: scale(1.05);
+  }
+  
+  .git-node-text {
+    @apply font-medium text-sm transition-all duration-200;
+  }
+  
+  .git-node:hover .git-node-text {
+    @apply font-semibold;
+  }
+  
+  .git-node-id {
+    @apply font-mono text-xs text-gray-500 transition-all;
+  }
+  
+  .git-node:hover .git-node-id {
+    @apply text-gray-700;
+  }
+  
+  .git-node-commit {
+    @apply fill-white stroke-2 transition-all duration-200;
+  }
+  
+  .git-node:hover .git-node-commit {
+    @apply stroke-[3px];
+  }
+  
+  .git-edge {
+    @apply transition-all duration-200 opacity-70;
+  }
+  
+  .git-edge:hover {
+    @apply stroke-[3px] opacity-100;
+    filter: brightness(1.2);
+  }
+  
+  .git-edge-highlight {
+    @apply opacity-20 transition-all duration-200;
+  }
+  
+  .git-edge:hover + .git-edge-highlight {
+    @apply opacity-40;
+  }
+  
+  /* Drop area styling - Enhanced MusicBlocks style */
+  .drop-area {
+    @apply border-2 border-dashed rounded-lg p-5 flex flex-col items-center justify-center transition-all duration-300;
+  }
+  
+  .drop-area.active {
+    @apply border-blue-500 bg-blue-50;
+    animation: pulse-blue 2s infinite;
+  }
+  
+  .drop-area.over {
+    @apply border-green-500 bg-green-50 scale-105 border-solid;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+  }
+  
+  @keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  }
+  
+  /* Tooltip styling - Enhanced MusicBlocks style */
+  .tooltip {
+    @apply z-20 shadow-xl;
+    animation: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: center left;
+  }
+  
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(5px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  
+  /* Animation classes for Git learning tool - Enhanced for MusicBlocks style */
+  .animate-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .animate-ripple::after {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform 0.5s, opacity 0.8s;
+  }
+  
+  .animate-ripple:active::after {
+    transform: scale(0, 0);
+    opacity: 0.3;
+    transition: 0s;
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 3s linear infinite;
+  }
+  
+  .animate-slow-spin {
+    animation: spin 10s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-bounce {
+    animation: bounce 1s ease-in-out infinite alternate;
+  }
+  
+  @keyframes bounce {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-5px);
+    }
+  }
+  
+  .animate-bounce-subtle {
+    animation: bounce-subtle 2s ease-in-out infinite;
+  }
+  
+  @keyframes bounce-subtle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+  
+  /* MusicBlocks-specific animations */
+  .animate-flow {
+    animation: flow 3s ease-in-out infinite;
+  }
+  
+  @keyframes flow {
+    0% { transform: translateX(0) scale(1); }
+    50% { transform: translateX(5px) scale(1.01); }
+    100% { transform: translateX(0) scale(1); }
+  }
+  
+  .animate-blink {
+    animation: blink 1s ease-in-out infinite;
+  }
+  
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  /* Lesson progress styling - MusicBlocks inspired */
+  .lesson-progress-bar {
+    @apply h-2 bg-gray-200 rounded-full overflow-hidden;
+  }
+  
+  .lesson-progress-value {
+    @apply h-full transition-all duration-500 ease-out;
+    background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+    background-size: 200% 100%;
+    animation: gradient-shift 2s ease infinite;
+  }
+  
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  /* MusicBlocks-style speech bubbles for instructions */
+  .speech-bubble {
+    @apply relative p-4 bg-white rounded-lg shadow-md;
+    animation: bubble-in 0.3s ease-out;
+  }
+  
+  @keyframes bubble-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 15px solid transparent;
+  }
+  
+  .speech-bubble.right::after {
+    left: 100%;
+    top: 30px;
+    border-left-color: white;
+  }
+  
+  .speech-bubble.left::after {
+    right: 100%;
+    top: 30px;
+    border-right-color: white;
+  }
+  
+  /* MusicBlocks-style header and navigation */
+  .mb-header {
+    @apply bg-[#2196F3] text-white;
+    background: linear-gradient(135deg, #1E88E5, #2196F3);
+  }
+  
+  .mb-toolbar-button {
+    @apply text-white hover:bg-blue-600 p-2 rounded-full transition-colors relative overflow-hidden;
+  }
+  
+  .mb-toolbar-button::after {
+    content: '';
+    position: absolute;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 0.3s ease;
+  }
+  
+  .mb-toolbar-button:hover::after {
+    transform: scale(1);
+  }
+  
+  /* MusicBlocks-style sidebar */
+  .mb-sidebar {
+    @apply bg-gray-50 border-r border-gray-200;
+    background: linear-gradient(to bottom, #fafafa, #f5f5f5);
+  }
+  
+  .mb-sidebar-title {
+    @apply font-bold text-lg text-gray-800 mb-4;
+  }
+  
+  /* MusicBlocks-style tabs */
+  .mb-tabs {
+    @apply flex border-b border-gray-200;
+  }
+  
+  .mb-tab {
+    @apply px-4 py-2 font-medium text-gray-600 border-b-2 border-transparent transition-all duration-200;
+  }
+  
+  .mb-tab:hover:not(.active) {
+    @apply text-gray-800 border-gray-300 bg-gray-50;
+  }
+  
+  .mb-tab.active {
+    @apply text-blue-600 border-blue-600;
+  }
+  
+  /* Scale animations for hover states - common in MusicBlocks */
+  .hover-scale {
+    @apply transition-transform duration-200;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Custom scrollbars for MusicBlocks style */
+  .mb-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .mb-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+  }
+  
+  .mb-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded transition-colors;
+  }
+  
+  .mb-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
 }
