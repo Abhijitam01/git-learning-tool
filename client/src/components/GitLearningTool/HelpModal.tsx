@@ -2,10 +2,11 @@ import React from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../../components/ui/dialog';
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -15,54 +16,86 @@ interface HelpModalProps {
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Git Learning Tool Help</DialogTitle>
-          <DialogDescription>
-            Learn how to use the Git Learning Tool
-          </DialogDescription>
+          <DialogTitle className="text-xl font-bold">Git Learning Tool Help</DialogTitle>
         </DialogHeader>
         
-        <div className="help-content space-y-6 my-4">
+        <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold mb-2">Getting Started</h3>
-            <p className="text-sm text-gray-600">
-              The Git Learning Tool helps you learn Git concepts through interactive visualization. 
-              You can use the blocks on the left sidebar to perform Git operations, or follow guided lessons.
+            <h3 className="font-medium text-lg mb-2">Getting Started</h3>
+            <p className="mb-4">
+              Welcome to the Git Learning Tool! This interactive platform helps you understand Git concepts through
+              hands-on practice with a visual interface.
             </p>
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-2">Git Blocks</h3>
-            <p className="text-sm text-gray-600 mb-2">
-              The colored blocks on the sidebar represent different Git operations:
+            <h3 className="font-medium text-lg mb-2">How to Use the Tool</h3>
+            <ol className="list-decimal pl-5 mb-4 space-y-2">
+              <li>Drag Git operation blocks from the left toolbox to the visualization area</li>
+              <li>Fill in required information (e.g., commit messages, branch names)</li>
+              <li>Watch how the Git graph updates with your actions</li>
+              <li>Follow lesson guides to learn Git concepts step by step</li>
+            </ol>
+          </div>
+          
+          <div>
+            <h3 className="font-medium text-lg mb-2">Git Operations</h3>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="font-medium mb-1 text-[#26A69A]">Commit</div>
+                <p className="text-sm">Saves your changes as a snapshot in the Git history</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="font-medium mb-1 text-[#7E57C2]">Branch</div>
+                <p className="text-sm">Creates a new line of development</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="font-medium mb-1 text-[#FF9800]">Merge</div>
+                <p className="text-sm">Combines changes from one branch into another</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="font-medium mb-1 text-[#42A5F5]">Checkout</div>
+                <p className="text-sm">Switches to a different branch or commit</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded">
+                <div className="font-medium mb-1 text-[#EF5350]">Revert</div>
+                <p className="text-sm">Undoes changes from a specific commit</p>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="font-medium text-lg mb-2">Lessons</h3>
+            <p className="mb-2">
+              Follow structured lessons to learn Git concepts progressively:
             </p>
-            <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-              <li><span className="text-green-600 font-medium">Commit</span>: Create a new commit</li>
-              <li><span className="text-blue-600 font-medium">Branch</span>: Create a new branch</li>
-              <li><span className="text-purple-600 font-medium">Merge</span>: Merge branches</li>
-              <li><span className="text-amber-600 font-medium">Checkout</span>: Switch branches or commits</li>
-              <li><span className="text-red-600 font-medium">Revert</span>: Undo a commit</li>
-              <li><span className="text-gray-600 font-medium">Issue</span>: Create an issue ticket</li>
+            <ul className="list-disc pl-5 mb-4">
+              <li>Intro to Git - Understand basic concepts</li>
+              <li>Creating Commits - Learn to save your work</li>
+              <li>Branching & Merging - Work with parallel development</li>
+              <li>Advanced Git - Master advanced workflows</li>
             </ul>
           </div>
           
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Lessons</h3>
-            <p className="text-sm text-gray-600">
-              Follow guided lessons to learn Git concepts step by step. Each lesson consists of multiple steps 
-              that will teach you different aspects of Git. Your progress is saved automatically.
-            </p>
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Visualization</h3>
-            <p className="text-sm text-gray-600">
-              The visualization in the center shows your Git repository. Commits are shown as hexagons, 
-              connected by lines representing the commit history. Each branch has a different color.
-            </p>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+            <div className="flex items-start">
+              <i className="fas fa-lightbulb text-blue-500 mt-1 mr-3"></i>
+              <div>
+                <div className="font-medium text-blue-800 mb-1">Tip</div>
+                <p className="text-blue-800 text-sm">
+                  Hover over blocks to see tooltips explaining Git concepts. Take your time to understand how
+                  each action affects the Git graph.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
+        
+        <DialogFooter>
+          <Button onClick={onClose}>Got it!</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

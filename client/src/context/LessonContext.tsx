@@ -1,31 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useGit, GitState } from './GitContext';
+import { Lesson, LessonProgress, GitState } from '@/components/GitLearningTool/types';
 import { lessons } from '@/data/lessons';
-
-// Define types
-export interface LessonStep {
-  title: string;
-  description: string;
-  action: string;
-  actionDescription?: string;
-  expectedResult?: (state: GitState) => boolean;
-}
-
-export interface Lesson {
-  id: string;
-  title: string;
-  description: string;
-  steps: LessonStep[];
-  requirements?: string[];
-}
-
-export interface LessonProgress {
-  lessonId: string;
-  currentStep: number;
-  completed: boolean;
-  totalSteps: number;
-  progress: number;
-}
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface LessonContextType {
   lessons: Lesson[];
@@ -38,128 +14,115 @@ interface LessonContextType {
   resetProgress: () => void;
 }
 
-// Create context
+const initialLessonProgress: Record<string, LessonProgress> = {};
+
+// Initialize progress for all lessons
+lessons.forEach(lesson => {
+  initialLessonProgress[lesson.id] = {
+    lessonId: lesson.id,
+    currentStep: 1,
+    completed: false,
+    totalSteps: lesson.steps.length,
+    progress: 0,
+  };
+});
+
 const LessonContext = createContext<LessonContextType | undefined>(undefined);
 
-// Create provider
 export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { state: gitState } = useGit();
+  const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>(initialLessonProgress);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
-  const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
+  const { setItem, getItem } = useLocalStorage();
   
-  // Initialize lesson progress
+  // Load progress from local storage
   useEffect(() => {
-    const savedProgress = localStorage.getItem('lessonProgress');
-    
+    const savedProgress = getItem('lessonProgress');
     if (savedProgress) {
-      setLessonProgress(JSON.parse(savedProgress));
-    } else {
-      // Initialize progress for all lessons
-      const initialProgress: Record<string, LessonProgress> = {};
-      
-      lessons.forEach(lesson => {
-        initialProgress[lesson.id] = {
-          lessonId: lesson.id,
-          currentStep: 1,
-          completed: false,
-          totalSteps: lesson.steps.length,
-          progress: 0,
-        };
-      });
-      
-      setLessonProgress(initialProgress);
+      try {
+        const parsedProgress = JSON.parse(savedProgress) as Record<string, LessonProgress>;
+        setLessonProgress(parsedProgress);
+      } catch (error) {
+        console.error('Error loading lesson progress:', error);
+      }
     }
-  }, []);
+  }, [getItem]);
   
-  // Save progress whenever it changes
+  // Save progress to local storage whenever it changes
   useEffect(() => {
-    if (Object.keys(lessonProgress).length > 0) {
-      localStorage.setItem('lessonProgress', JSON.stringify(lessonProgress));
-    }
-  }, [lessonProgress]);
+    setItem('lessonProgress', JSON.stringify(lessonProgress));
+  }, [lessonProgress, setItem]);
   
-  const setCurrentLessonById = (lessonId: string) => {
+  // Select a lesson to work on
+  const handleSetCurrentLesson = (lessonId: string) => {
     const lesson = lessons.find(l => l.id === lessonId);
     if (lesson) {
       setCurrentLesson(lesson);
     }
   };
   
+  // Move to the next step in the lesson
   const nextStep = () => {
     if (!currentLesson) return;
     
-    const progress = lessonProgress[currentLesson.id];
-    
-    if (progress.currentStep < currentLesson.steps.length) {
-      // Move to next step
-      const newStep = progress.currentStep + 1;
-      const newProgress = Math.round((newStep / currentLesson.steps.length) * 100);
+    const currentProgress = lessonProgress[currentLesson.id];
+    if (currentProgress.currentStep < currentLesson.steps.length) {
+      // Update progress for this lesson
+      const newProgress = {
+        ...currentProgress,
+        currentStep: currentProgress.currentStep + 1,
+        progress: (currentProgress.currentStep + 1) / currentLesson.steps.length,
+      };
+      
+      // Check if this completes the lesson
+      if (newProgress.currentStep === currentLesson.steps.length) {
+        newProgress.completed = true;
+      }
       
       setLessonProgress({
         ...lessonProgress,
-        [currentLesson.id]: {
-          ...progress,
-          currentStep: newStep,
-          progress: newProgress,
-          completed: newStep === currentLesson.steps.length,
-        },
+        [currentLesson.id]: newProgress,
       });
     }
   };
   
+  // Move to the previous step in the lesson
   const previousStep = () => {
     if (!currentLesson) return;
     
-    const progress = lessonProgress[currentLesson.id];
-    
-    if (progress.currentStep > 1) {
-      // Move to previous step
-      const newStep = progress.currentStep - 1;
-      const newProgress = Math.round((newStep / currentLesson.steps.length) * 100);
+    const currentProgress = lessonProgress[currentLesson.id];
+    if (currentProgress.currentStep > 1) {
+      const newProgress = {
+        ...currentProgress,
+        currentStep: currentProgress.currentStep - 1,
+        progress: (currentProgress.currentStep - 1) / currentLesson.steps.length,
+      };
       
       setLessonProgress({
         ...lessonProgress,
-        [currentLesson.id]: {
-          ...progress,
-          currentStep: newStep,
-          progress: newProgress,
-          completed: false,
-        },
+        [currentLesson.id]: newProgress,
       });
     }
   };
   
+  // Check if the current step has been completed
   const checkStepCompletion = (gitState: GitState): boolean => {
     if (!currentLesson) return false;
     
     const progress = lessonProgress[currentLesson.id];
     const currentStep = currentLesson.steps[progress.currentStep - 1];
     
-    // If there's an expected result function, use it to check completion
+    // If the step has an expectedResult function, use it to check completion
     if (currentStep.expectedResult) {
       return currentStep.expectedResult(gitState);
     }
     
-    // Default to true if no expected result is defined
+    // Otherwise, just return true (user can advance manually)
     return true;
   };
   
+  // Reset all lesson progress
   const resetProgress = () => {
-    // Reset progress for all lessons
-    const resetLessonProgress: Record<string, LessonProgress> = {};
-    
-    lessons.forEach(lesson => {
-      resetLessonProgress[lesson.id] = {
-        lessonId: lesson.id,
-        currentStep: 1,
-        completed: false,
-        totalSteps: lesson.steps.length,
-        progress: 0,
-      };
-    });
-    
-    setLessonProgress(resetLessonProgress);
-    localStorage.setItem('lessonProgress', JSON.stringify(resetLessonProgress));
+    setLessonProgress(initialLessonProgress);
     setCurrentLesson(null);
   };
   
@@ -167,24 +130,20 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     lessons,
     currentLesson,
     lessonProgress,
-    setCurrentLesson: setCurrentLessonById,
+    setCurrentLesson: handleSetCurrentLesson,
     nextStep,
     previousStep,
     checkStepCompletion,
     resetProgress,
   };
   
-  return (
-    <LessonContext.Provider value={contextValue}>
-      {children}
-    </LessonContext.Provider>
-  );
+  return <LessonContext.Provider value={contextValue}>{children}</LessonContext.Provider>;
 };
 
-// Create hook for using the context
+// Custom hook to use the lesson context
 export const useLesson = (): LessonContextType => {
   const context = useContext(LessonContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useLesson must be used within a LessonProvider');
   }
   return context;

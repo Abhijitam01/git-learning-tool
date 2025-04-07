@@ -1,9 +1,11 @@
+import React from 'react';
 import { useLesson } from '@/context/LessonContext';
 import { useGit } from '@/context/GitContext';
-import { Button } from '../../components/ui/button';
+import { Button } from '@/components/ui/button';
+
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const InstructionPanel: React.FC = () => {
   const { currentLesson, lessonProgress, nextStep, previousStep, checkStepCompletion } = useLesson();
@@ -117,6 +119,38 @@ const InstructionPanel: React.FC = () => {
                         and use the toolbar to zoom and navigate. Each branch has a distinct color for easy identification.
                       </AccordionContent>
                     </AccordionItem>
+                    
+                    <AccordionItem value="item-2" className="border-indigo-200">
+                      <AccordionTrigger className="text-indigo-700 hover:text-indigo-900">
+                        <i className="fas fa-cubes mr-2"></i> Block-Based Operations
+                      </AccordionTrigger>
+                      <AccordionContent className="text-indigo-700">
+                        Blocks in the left sidebar represent different Git operations. Click a block to open a form 
+                        for that operation, or drag it onto the visualization. The blocks follow MusicBlocks' visual style 
+                        for a consistent experience.
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="item-3" className="border-indigo-200">
+                      <AccordionTrigger className="text-indigo-700 hover:text-indigo-900">
+                        <i className="fas fa-graduation-cap mr-2"></i> Interactive Lessons
+                      </AccordionTrigger>
+                      <AccordionContent className="text-indigo-700">
+                        Lessons guide you through common Git workflows step by step. Each step has clear instructions
+                        and validation to ensure you've correctly performed the required operations. Progress is tracked
+                        and saved automatically.
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="item-4" className="border-indigo-200">
+                      <AccordionTrigger className="text-indigo-700 hover:text-indigo-900">
+                        <i className="fas fa-save mr-2"></i> Progress Tracking
+                      </AccordionTrigger>
+                      <AccordionContent className="text-indigo-700">
+                        Your progress through lessons and your Git repository state are saved automatically. You can
+                        return to continue where you left off, or reset to start fresh.
+                      </AccordionContent>
+                    </AccordionItem>
                   </Accordion>
                 </div>
               </TabsContent>
@@ -129,6 +163,92 @@ const InstructionPanel: React.FC = () => {
                   <p className="text-amber-700 mb-3">
                     The Git Learning Tool provides the following blocks for performing Git operations. Each block represents a specific Git command.
                   </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                      <h4 className="font-medium text-amber-800 flex items-center">
+                        <div className="w-6 h-6 rounded-md bg-[#4CAF50] flex items-center justify-center mr-2">
+                          <i className="fas fa-plus text-white text-xs"></i>
+                        </div>
+                        Commit
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">Creates a new commit with your changes and a message describing what you did.</p>
+                    </div>
+                    
+                    <div className="bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                      <h4 className="font-medium text-amber-800 flex items-center">
+                        <div className="w-6 h-6 rounded-md bg-[#2196F3] flex items-center justify-center mr-2">
+                          <i className="fas fa-code-branch text-white text-xs"></i>
+                        </div>
+                        Branch
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">Creates a new branch from the current commit, letting you work on features separately.</p>
+                    </div>
+                    
+                    <div className="bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                      <h4 className="font-medium text-amber-800 flex items-center">
+                        <div className="w-6 h-6 rounded-md bg-[#9C27B0] flex items-center justify-center mr-2">
+                          <i className="fas fa-code-merge text-white text-xs"></i>
+                        </div>
+                        Merge
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">Combines changes from one branch into another, integrating feature work.</p>
+                    </div>
+                    
+                    <div className="bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                      <h4 className="font-medium text-amber-800 flex items-center">
+                        <div className="w-6 h-6 rounded-md bg-[#FF9800] flex items-center justify-center mr-2">
+                          <i className="fas fa-exchange-alt text-white text-xs"></i>
+                        </div>
+                        Checkout
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">Switches to a different branch or commit, changing what you're working on.</p>
+                    </div>
+                    
+                    <div className="bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                      <h4 className="font-medium text-amber-800 flex items-center">
+                        <div className="w-6 h-6 rounded-md bg-[#F44336] flex items-center justify-center mr-2">
+                          <i className="fas fa-undo text-white text-xs"></i>
+                        </div>
+                        Revert
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">Undoes a specific commit, creating a new commit that reverses the changes.</p>
+                    </div>
+                    
+                    <div className="bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                      <h4 className="font-medium text-amber-800 flex items-center">
+                        <div className="w-6 h-6 rounded-md bg-[#607D8B] flex items-center justify-center mr-2">
+                          <i className="fas fa-exclamation-circle text-white text-xs"></i>
+                        </div>
+                        Issue
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1">Creates a note about a problem or feature request for future work.</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
+                  <h3 className="text-lg font-semibold text-amber-800 mb-2">
+                    <i className="fas fa-cogs text-amber-600 mr-2"></i> How to Use Blocks
+                  </h3>
+                  
+                  <ol className="list-decimal list-inside text-amber-700 space-y-2 ml-2">
+                    <li>Click on a block in the left sidebar or drag it to the visualization area</li>
+                    <li>Fill in the required information in the form that appears</li>
+                    <li>Click "Execute" to apply the Git operation</li>
+                    <li>Watch the visualization update to reflect your changes</li>
+                    <li>Use the toolbar to navigate and zoom the visualization</li>
+                  </ol>
+                  
+                  <div className="mt-4 p-3 bg-amber-100 rounded border border-amber-200">
+                    <h4 className="font-medium text-amber-800 flex items-center">
+                      <i className="fas fa-lightbulb text-amber-600 mr-2"></i> Tip
+                    </h4>
+                    <p className="text-sm text-amber-700">
+                      Blocks are color-coded according to their function. Green for additions, blue for navigation, 
+                      purple for merging, and red for reversals. This matches common Git interface conventions.
+                    </p>
+                  </div>
                 </div>
               </TabsContent>
               
@@ -141,6 +261,70 @@ const InstructionPanel: React.FC = () => {
                     The Git Learning Tool is designed to integrate seamlessly with MusicBlocks, extending the platform
                     with version control capabilities for music programming projects.
                   </p>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm mb-3">
+                    <h4 className="font-medium text-green-800">
+                      <i className="fas fa-puzzle-piece text-green-600 mr-1.5"></i> Integration Methods
+                    </h4>
+                    <div className="mt-2 text-sm text-gray-600 space-y-2">
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex-shrink-0 flex items-center justify-center text-green-600 mt-0.5 mr-2">1</div>
+                        <p><span className="font-medium text-green-700">Embedded Component:</span> Import the Git Learning Tool as a React component within MusicBlocks.</p>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex-shrink-0 flex items-center justify-center text-green-600 mt-0.5 mr-2">2</div>
+                        <p><span className="font-medium text-green-700">Iframe Integration:</span> Load the tool in an iframe if frameworks are incompatible.</p>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex-shrink-0 flex items-center justify-center text-green-600 mt-0.5 mr-2">3</div>
+                        <p><span className="font-medium text-green-700">Standalone Mode:</span> Deploy as a separate application linked from MusicBlocks.</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm">
+                    <h4 className="font-medium text-green-800">
+                      <i className="fas fa-exchange-alt text-green-600 mr-1.5"></i> Data & Project Sharing
+                    </h4>
+                    <div className="mt-2 text-sm text-gray-600 space-y-2">
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex-shrink-0 flex items-center justify-center text-green-600 mt-0.5 mr-2">1</div>
+                        <p><span className="font-medium text-green-700">Project Export/Import:</span> Export MusicBlocks projects to Git repositories and vice versa.</p>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex-shrink-0 flex items-center justify-center text-green-600 mt-0.5 mr-2">2</div>
+                        <p><span className="font-medium text-green-700">Version Control:</span> Track changes to music compositions using Git history.</p>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex-shrink-0 flex items-center justify-center text-green-600 mt-0.5 mr-2">3</div>
+                        <p><span className="font-medium text-green-700">Collaborative Workflow:</span> Enable multiple musicians to collaborate on projects.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                  <h3 className="text-lg font-semibold text-green-800 mb-2">
+                    <i className="fas fa-code text-green-600 mr-2"></i> GitHub Integration
+                  </h3>
+                  <p className="text-green-700 mb-3">
+                    Future versions will connect to real GitHub repositories, enabling authentic Git operations.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="bg-white p-3 rounded-lg border border-green-200 shadow-sm">
+                      <h4 className="font-medium text-green-800"><i className="fas fa-user-lock text-green-500 mr-1.5"></i> Authentication</h4>
+                      <p className="text-sm text-gray-600">Connect with your GitHub account using secure OAuth authentication.</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-green-200 shadow-sm">
+                      <h4 className="font-medium text-green-800"><i className="fas fa-cloud-download-alt text-green-500 mr-1.5"></i> Repository Access</h4>
+                      <p className="text-sm text-gray-600">Clone, create, and manage your GitHub repositories directly from the tool.</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-green-200 shadow-sm">
+                      <h4 className="font-medium text-green-800"><i className="fas fa-users text-green-500 mr-1.5"></i> Collaboration</h4>
+                      <p className="text-sm text-gray-600">Work with others on shared projects using GitHub's collaboration features.</p>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
               
@@ -149,6 +333,73 @@ const InstructionPanel: React.FC = () => {
                   <h3 className="text-lg font-semibold text-purple-800 mb-2">
                     <i className="fas fa-question-circle text-purple-600 mr-2"></i> Frequently Asked Questions
                   </h3>
+                  
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="faq-1" className="border-purple-200">
+                      <AccordionTrigger className="text-purple-700 hover:text-purple-900">
+                        Is this tool connected to a real Git repository?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-purple-700">
+                        Currently, the Git Learning Tool simulates Git operations for educational purposes. It doesn't connect
+                        to actual repositories. Future versions will add GitHub integration for real repository operations.
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="faq-2" className="border-purple-200">
+                      <AccordionTrigger className="text-purple-700 hover:text-purple-900">
+                        How does the tool integrate with MusicBlocks?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-purple-700">
+                        The Git Learning Tool is designed as a complementary component for MusicBlocks. It can be integrated
+                        as an embedded component, through an iframe, or as a standalone application. The UI matches MusicBlocks'
+                        style for a consistent experience.
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="faq-3" className="border-purple-200">
+                      <AccordionTrigger className="text-purple-700 hover:text-purple-900">
+                        Can I save my progress and Git repository state?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-purple-700">
+                        Yes, your progress through lessons and your Git repository state are automatically saved. You can
+                        return later and continue where you left off. You can also manually save your state using the
+                        Save button in the navigation bar.
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="faq-4" className="border-purple-200">
+                      <AccordionTrigger className="text-purple-700 hover:text-purple-900">
+                        How do I start learning Git with this tool?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-purple-700">
+                        To start learning, select a lesson from the sidebar. Each lesson guides you through specific
+                        Git workflows step by step. Follow the instructions in the panel, and use the Git blocks to
+                        complete each task. The visualization will update to show your progress.
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="faq-5" className="border-purple-200">
+                      <AccordionTrigger className="text-purple-700 hover:text-purple-900">
+                        What are the requirements for MusicBlocks integration?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-purple-700">
+                        For complete integration with MusicBlocks, both applications should share authentication systems
+                        and have compatible data formats. If MusicBlocks uses React, direct component integration is possible.
+                        Otherwise, iframe integration provides a simpler approach with minimal dependencies.
+                      </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="faq-6" className="border-purple-200">
+                      <AccordionTrigger className="text-purple-700 hover:text-purple-900">
+                        How can I contribute to this project?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-purple-700">
+                        This tool was developed as part of a Google Summer of Code (GSoC) project with Sugar Labs.
+                        You can contribute by submitting issues or pull requests to the GitHub repository, or by
+                        providing feedback on the learning experience.
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
               </TabsContent>
             </Tabs>
@@ -185,27 +436,37 @@ const InstructionPanel: React.FC = () => {
               </h3>
             </div>
             
-            {/* Step description */}
-            <p className="mt-2 text-gray-600 leading-relaxed" id="step-description">
-              {currentStep.description}
-            </p>
-            
-            {/* Action hint */}
-            {currentStep.actionDescription && (
-              <div className="mt-3 p-2 bg-blue-50 border border-blue-100 rounded-md">
-                <p className="text-blue-700 text-sm">
-                  <i className="fas fa-info-circle mr-2"></i>
-                  {currentStep.actionDescription}
-                </p>
-              </div>
-            )}
+            {/* Step description with MusicBlocks style */}
+            <div className="mt-2 pl-9" id="lesson-description">
+              <p className="text-gray-700 leading-relaxed">
+                {currentStep.description}
+              </p>
+              
+              {/* Action hint */}
+              {currentStep.actionDescription && (
+                <div className="mt-3 p-2 bg-blue-50 border-l-4 border-blue-300 rounded-r-md">
+                  <p className="text-blue-700 text-sm flex items-start">
+                    <i className="fas fa-lightbulb mt-0.5 mr-2 text-blue-500"></i> 
+                    <span>{currentStep.actionDescription}</span>
+                  </p>
+                </div>
+              )}
+              
+              {/* Completion indicator */}
+              {isCurrentStepComplete && (
+                <div className="mt-3 text-green-600 text-sm flex items-center">
+                  <i className="fas fa-check-circle mr-1.5"></i> 
+                  <span>Step completed! You can proceed to the next step.</span>
+                </div>
+              )}
+            </div>
           </div>
           
-          {/* Right side - navigation buttons */}
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              className="rounded-full shadow-sm"
+          {/* Right side - navigation controls */}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              className="rounded-full hover:bg-gray-100 transition-all"
               onClick={previousStep}
               disabled={progress.currentStep <= 1}
             >
@@ -241,6 +502,22 @@ const InstructionPanel: React.FC = () => {
               <i className="fas fa-trophy mr-1.5 text-yellow-500"></i>
               {Math.round(progressPercentage)}% Complete
             </div>
+          </div>
+          
+          {/* Mini steps indicator - MusicBlocks style */}
+          <div className="flex items-center justify-center space-x-1 mt-3">
+            {currentLesson.steps.map((_, index) => (
+              <div 
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  index < progress.currentStep - 1 
+                    ? 'bg-green-500' 
+                    : index === progress.currentStep - 1 
+                      ? 'bg-blue-500 w-3 h-3' 
+                      : 'bg-gray-300'
+                }`}
+              ></div>
+            ))}
           </div>
         </div>
       </div>

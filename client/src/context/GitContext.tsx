@@ -1,47 +1,19 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { GitState, Commit, Branch, GitBlockType, SerializedGitState } from '@/components/GitLearningTool/types';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
-// Define Git state types
-export interface Commit {
-  id: string;
-  message: string;
-  timestamp: Date;
-  parentId: string | null;
-  x?: number;
-  y?: number;
-  color?: string;
-  branch: string;
-}
-
-export interface Branch {
-  name: string;
-  headCommitId: string | null;
-  color: string;
-  isActive: boolean;
-}
-
-export interface GitState {
-  commits: Commit[];
-  branches: Branch[];
-  currentBranch: string;
-  currentCommit: string | null;
-}
-
+// Initial state for Git context
 const initialState: GitState = {
   commits: [],
   branches: [
-    {
-      name: 'main',
-      headCommitId: null,
-      color: '#2196F3',
-      isActive: true,
-    },
+    { name: 'main', headCommitId: null, color: '#26A69A', isActive: true }
   ],
   currentBranch: 'main',
   currentCommit: null,
 };
 
-// Define action types
+// Action types for the reducer
 type GitAction =
   | { type: 'CREATE_COMMIT'; payload: { message: string } }
   | { type: 'CREATE_BRANCH'; payload: { name: string } }
@@ -53,7 +25,7 @@ type GitAction =
   | { type: 'LOAD_STATE'; payload: GitState }
   | { type: 'SET_ACTIVE_BRANCH'; payload: { name: string } };
 
-// Define context type
+// Context interface
 interface GitContextType {
   state: GitState;
   createCommit: (message: string) => void;
@@ -67,29 +39,49 @@ interface GitContextType {
   loadState: () => void;
 }
 
-// Create context
+// Create the context
 const GitContext = createContext<GitContextType | undefined>(undefined);
 
-// Create reducer
+// Helper functions for the reducer
+const getColorForBranch = () => {
+  const colors = ['#7E57C2', '#42A5F5', '#FF9800', '#EC407A', '#66BB6A'];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+const findCommitById = (commits: Commit[], id: string): Commit | undefined => {
+  return commits.find(commit => commit.id === id);
+};
+
+const findBranchByName = (branches: Branch[], name: string): Branch | undefined => {
+  return branches.find(branch => branch.name === name);
+};
+
+// Git reducer function
 const gitReducer = (state: GitState, action: GitAction): GitState => {
   switch (action.type) {
     case 'CREATE_COMMIT': {
       const { message } = action.payload;
-      const activeBranch = state.branches.find(b => b.name === state.currentBranch)!;
+      const currentBranch = findBranchByName(state.branches, state.currentBranch);
       
+      if (!currentBranch) return state;
+      
+      const parentId = currentBranch.headCommitId;
       const newCommit: Commit = {
         id: uuidv4(),
         message,
         timestamp: new Date(),
-        parentId: activeBranch.headCommitId,
-        branch: activeBranch.name,
+        parentId,
+        branch: currentBranch.name,
+        color: currentBranch.color,
       };
       
-      const updatedBranches = state.branches.map(branch => 
-        branch.name === activeBranch.name 
-          ? { ...branch, headCommitId: newCommit.id }
-          : branch
-      );
+      // Update branches with new head commit
+      const updatedBranches = state.branches.map(branch => {
+        if (branch.name === currentBranch.name) {
+          return { ...branch, headCommitId: newCommit.id };
+        }
+        return branch;
+      });
       
       return {
         ...state,
@@ -103,62 +95,64 @@ const gitReducer = (state: GitState, action: GitAction): GitState => {
       const { name } = action.payload;
       
       // Check if branch already exists
-      if (state.branches.some(b => b.name === name)) {
-        throw new Error(`Branch "${name}" already exists`);
+      if (state.branches.some(branch => branch.name === name)) {
+        return state;
       }
       
-      const activeBranch = state.branches.find(b => b.name === state.currentBranch)!;
+      const currentBranch = findBranchByName(state.branches, state.currentBranch);
+      if (!currentBranch) return state;
       
-      // Generate a random color (exclude colors similar to existing branches)
-      const existingColors = state.branches.map(b => b.color);
-      let color = '#' + Math.floor(Math.random() * 16777215).toString(16);
-      while (existingColors.includes(color)) {
-        color = '#' + Math.floor(Math.random() * 16777215).toString(16);
-      }
-      
+      // Create new branch from current commit
       const newBranch: Branch = {
         name,
-        headCommitId: activeBranch.headCommitId,
-        color,
-        isActive: false,
+        headCommitId: currentBranch.headCommitId,
+        color: getColorForBranch(),
+        isActive: true,
       };
+      
+      // Deactivate all other branches
+      const updatedBranches = state.branches.map(branch => ({
+        ...branch,
+        isActive: false
+      }));
       
       return {
         ...state,
-        branches: [...state.branches, newBranch],
+        branches: [...updatedBranches, newBranch],
+        currentBranch: name,
+        currentCommit: newBranch.headCommitId,
       };
     }
     
     case 'MERGE_BRANCH': {
       const { sourceBranch } = action.payload;
+      const currentBranch = findBranchByName(state.branches, state.currentBranch);
+      const sourceB = findBranchByName(state.branches, sourceBranch);
       
-      // Find source and target branches
-      const targetBranch = state.branches.find(b => b.name === state.currentBranch)!;
-      const source = state.branches.find(b => b.name === sourceBranch);
-      
-      if (!source) {
-        throw new Error(`Branch "${sourceBranch}" does not exist`);
+      if (!currentBranch || !sourceB || !sourceB.headCommitId || !currentBranch.headCommitId) {
+        return state;
       }
       
-      if (!source.headCommitId) {
-        throw new Error(`Branch "${sourceBranch}" has no commits`);
-      }
+      const sourceCommit = findCommitById(state.commits, sourceB.headCommitId);
+      if (!sourceCommit) return state;
       
-      // Create a merge commit
+      // Create merge commit
       const mergeCommit: Commit = {
         id: uuidv4(),
-        message: `Merge branch '${sourceBranch}' into ${state.currentBranch}`,
+        message: `Merge branch '${sourceBranch}' into ${currentBranch.name}`,
         timestamp: new Date(),
-        parentId: targetBranch.headCommitId,
-        branch: targetBranch.name,
+        parentId: currentBranch.headCommitId,
+        branch: currentBranch.name,
+        color: currentBranch.color,
       };
       
-      // Update branches
-      const updatedBranches = state.branches.map(branch => 
-        branch.name === targetBranch.name 
-          ? { ...branch, headCommitId: mergeCommit.id }
-          : branch
-      );
+      // Update current branch head
+      const updatedBranches = state.branches.map(branch => {
+        if (branch.name === currentBranch.name) {
+          return { ...branch, headCommitId: mergeCommit.id };
+        }
+        return branch;
+      });
       
       return {
         ...state,
@@ -171,18 +165,14 @@ const gitReducer = (state: GitState, action: GitAction): GitState => {
     case 'CHECKOUT': {
       const { target } = action.payload;
       
-      // Check if target is a branch
-      const isBranch = state.branches.some(b => b.name === target);
-      
-      if (isBranch) {
-        // Update active branch
+      // Check if target is a branch name
+      const targetBranch = findBranchByName(state.branches, target);
+      if (targetBranch) {
+        // Deactivate all branches and activate target branch
         const updatedBranches = state.branches.map(branch => ({
           ...branch,
-          isActive: branch.name === target,
+          isActive: branch.name === target
         }));
-        
-        // Find the branch
-        const targetBranch = state.branches.find(b => b.name === target)!;
         
         return {
           ...state,
@@ -190,48 +180,46 @@ const gitReducer = (state: GitState, action: GitAction): GitState => {
           currentBranch: target,
           currentCommit: targetBranch.headCommitId,
         };
-      } else {
-        // Assume target is a commit ID
-        const targetCommit = state.commits.find(c => c.id === target);
-        
-        if (!targetCommit) {
-          throw new Error(`Commit "${target}" does not exist`);
-        }
-        
+      }
+      
+      // Check if target is a commit id
+      const targetCommit = findCommitById(state.commits, target);
+      if (targetCommit) {
         return {
           ...state,
           currentCommit: target,
         };
       }
+      
+      return state;
     }
     
     case 'REVERT_COMMIT': {
       const { commitId } = action.payload;
+      const currentBranch = findBranchByName(state.branches, state.currentBranch);
       
-      // Find the commit to revert
-      const commitToRevert = state.commits.find(c => c.id === commitId);
+      if (!currentBranch || !currentBranch.headCommitId) return state;
       
-      if (!commitToRevert) {
-        throw new Error(`Commit "${commitId}" does not exist`);
-      }
+      const commitToRevert = findCommitById(state.commits, commitId);
+      if (!commitToRevert) return state;
       
-      // Create a revert commit
-      const activeBranch = state.branches.find(b => b.name === state.currentBranch)!;
-      
+      // Create revert commit
       const revertCommit: Commit = {
         id: uuidv4(),
         message: `Revert "${commitToRevert.message}"`,
         timestamp: new Date(),
-        parentId: activeBranch.headCommitId,
-        branch: activeBranch.name,
+        parentId: currentBranch.headCommitId,
+        branch: currentBranch.name,
+        color: currentBranch.color,
       };
       
-      // Update branches
-      const updatedBranches = state.branches.map(branch => 
-        branch.name === activeBranch.name 
-          ? { ...branch, headCommitId: revertCommit.id }
-          : branch
-      );
+      // Update branch head
+      const updatedBranches = state.branches.map(branch => {
+        if (branch.name === currentBranch.name) {
+          return { ...branch, headCommitId: revertCommit.id };
+        }
+        return branch;
+      });
       
       return {
         ...state,
@@ -242,52 +230,36 @@ const gitReducer = (state: GitState, action: GitAction): GitState => {
     }
     
     case 'CREATE_ISSUE': {
-      const { title, description } = action.payload;
-      
-      // Create an issue as a special type of commit
-      const activeBranch = state.branches.find(b => b.name === state.currentBranch)!;
-      
-      const issueCommit: Commit = {
-        id: uuidv4(),
-        message: `Issue: ${title}\n${description}`,
-        timestamp: new Date(),
-        parentId: activeBranch.headCommitId,
-        branch: activeBranch.name,
-      };
-      
-      // Update branches
-      const updatedBranches = state.branches.map(branch => 
-        branch.name === activeBranch.name 
-          ? { ...branch, headCommitId: issueCommit.id }
-          : branch
-      );
-      
-      return {
-        ...state,
-        commits: [...state.commits, issueCommit],
-        branches: updatedBranches,
-        currentCommit: issueCommit.id,
-      };
+      // In a real application, this would create an issue in a Git service
+      // For this educational tool, we'll just note it in the console
+      console.log('Issue created:', action.payload);
+      return state;
     }
     
-    case 'RESET_STATE':
+    case 'RESET_STATE': {
       return initialState;
+    }
     
-    case 'LOAD_STATE':
+    case 'LOAD_STATE': {
       return action.payload;
+    }
     
     case 'SET_ACTIVE_BRANCH': {
       const { name } = action.payload;
+      const branch = findBranchByName(state.branches, name);
       
-      const updatedBranches = state.branches.map(branch => ({
-        ...branch,
-        isActive: branch.name === name,
+      if (!branch) return state;
+      
+      const updatedBranches = state.branches.map(b => ({
+        ...b,
+        isActive: b.name === name
       }));
       
       return {
         ...state,
         branches: updatedBranches,
         currentBranch: name,
+        currentCommit: branch.headCommitId,
       };
     }
     
@@ -296,66 +268,73 @@ const gitReducer = (state: GitState, action: GitAction): GitState => {
   }
 };
 
-// Create provider
+// Provider component
 export const GitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gitReducer, initialState);
-  
-  // Load state from localStorage on init
+  const { setItem, getItem } = useLocalStorage();
+
+  // Persist state to localStorage when it changes
   useEffect(() => {
-    loadState();
-  }, []);
-  
+    const saveStateToStorage = () => {
+      setItem('gitLearningToolState', JSON.stringify(state));
+    };
+
+    // Throttle saving to prevent excessive writes
+    const timeoutId = setTimeout(saveStateToStorage, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [state, setItem]);
+
+  // Actions
   const createCommit = (message: string) => {
     dispatch({ type: 'CREATE_COMMIT', payload: { message } });
   };
-  
+
   const createBranch = (name: string) => {
     dispatch({ type: 'CREATE_BRANCH', payload: { name } });
   };
-  
+
   const mergeBranch = (sourceBranch: string) => {
     dispatch({ type: 'MERGE_BRANCH', payload: { sourceBranch } });
   };
-  
+
   const checkout = (target: string) => {
     dispatch({ type: 'CHECKOUT', payload: { target } });
   };
-  
+
   const revertCommit = (commitId: string) => {
     dispatch({ type: 'REVERT_COMMIT', payload: { commitId } });
   };
-  
+
   const createIssue = (title: string, description: string) => {
     dispatch({ type: 'CREATE_ISSUE', payload: { title, description } });
   };
-  
+
   const resetState = () => {
     dispatch({ type: 'RESET_STATE' });
-    localStorage.removeItem('gitState');
   };
-  
+
   const saveState = () => {
-    localStorage.setItem('gitState', JSON.stringify(state));
+    setItem('gitLearningToolState', JSON.stringify(state));
   };
-  
+
   const loadState = () => {
-    const savedState = localStorage.getItem('gitState');
+    const savedState = getItem('gitLearningToolState');
     if (savedState) {
-      const parsedState = JSON.parse(savedState);
-      
-      // Convert string dates back to Date objects
-      const fixedState = {
-        ...parsedState,
-        commits: parsedState.commits.map((commit: any) => ({
-          ...commit,
-          timestamp: new Date(commit.timestamp),
-        })),
-      };
-      
-      dispatch({ type: 'LOAD_STATE', payload: fixedState });
+      try {
+        const parsedState = JSON.parse(savedState) as GitState;
+        dispatch({ type: 'LOAD_STATE', payload: parsedState });
+      } catch (error) {
+        console.error('Error loading saved state:', error);
+      }
     }
   };
-  
+
+  // Load saved state on initial render
+  useEffect(() => {
+    loadState();
+  }, []);
+
   const contextValue: GitContextType = {
     state,
     createCommit,
@@ -368,18 +347,14 @@ export const GitProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveState,
     loadState,
   };
-  
-  return (
-    <GitContext.Provider value={contextValue}>
-      {children}
-    </GitContext.Provider>
-  );
+
+  return <GitContext.Provider value={contextValue}>{children}</GitContext.Provider>;
 };
 
-// Create hook for using the context
+// Custom hook to use the Git context
 export const useGit = (): GitContextType => {
   const context = useContext(GitContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useGit must be used within a GitProvider');
   }
   return context;
