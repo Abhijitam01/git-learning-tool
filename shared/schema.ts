@@ -1,58 +1,57 @@
-import { pgTable, serial, text, timestamp, integer, jsonb, boolean, numeric } from 'drizzle-orm/pg-core';
-import { createInsertSchema } from 'drizzle-zod';
-import { z } from 'zod';
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
-// Users table
+// Base User schema (from template)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  email: text("email").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  password: text("password").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
-  passwordHash: true,
-  email: true,
+  password: true,
 });
 
-// Git sessions table
+// Git Learning Tool Schemas
+
+// Git Sessions
 export const gitSessions = pgTable("git_sessions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
-  state: jsonb("state").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  name: text("name").notNull(),
+  data: jsonb("data").notNull(), // Stores the entire Git graph state
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertGitSessionSchema = createInsertSchema(gitSessions).pick({
   userId: true,
-  state: true,
+  name: true,
+  data: true,
 });
 
-// Lesson progress table
+// Lesson Progress
 export const lessonProgress = pgTable("lesson_progress", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
   lessonId: text("lesson_id").notNull(),
-  currentStep: integer("current_step").default(1),
-  completed: boolean("completed").default(false),
-  progress: numeric("progress").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  completed: boolean("completed").default(false).notNull(),
+  currentStep: integer("current_step").default(1).notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertLessonProgressSchema = createInsertSchema(lessonProgress).pick({
   userId: true,
   lessonId: true,
-  currentStep: true,
   completed: true,
-  progress: true,
+  currentStep: true,
+  completedAt: true,
 });
 
-// Export types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 

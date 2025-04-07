@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import GitBlocks from '../components/GitLearningTool/GitBlocks';
-import GitVisualization from '../components/GitLearningTool/GitVisualization';
-import InstructionPanel from '../components/GitLearningTool/InstructionPanel';
-import GitToolbar from '../components/GitLearningTool/GitToolbar';
-import HelpModal from '../components/GitLearningTool/HelpModal';
-import LessonCard from '../components/GitLearningTool/LessonCard';
-import { useGit } from '../context/GitContext';
-import { useLesson } from '../context/LessonContext';
-import { useGitOperations } from '../hooks/useGitOperations';
+import GitBlocks from '@/components/GitLearningTool/GitBlocks';
+import GitVisualization from '@/components/GitLearningTool/GitVisualization';
+import InstructionPanel from '@/components/GitLearningTool/InstructionPanel';
+import GitToolbar from '@/components/GitLearningTool/GitToolbar';
+import HelpModal from '@/components/GitLearningTool/HelpModal';
+import LessonCard from '@/components/GitLearningTool/LessonCard';
+import { useGit } from '@/context/GitContext';
+import { useLesson } from '@/context/LessonContext';
+import { useGitOperations } from '@/hooks/useGitOperations';
 import {
   Dialog,
   DialogContent,
@@ -16,13 +16,13 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
-import { Input } from '../components/ui/input';
-import { Textarea } from '../components/ui/textarea';
-import { Button } from '../components/ui/button';
-import { Label } from '../components/ui/label';
-import { useToast } from '../hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 
 // Separate the GitLearningTool implementation from the component that uses contexts
 // This helps avoid circular dependency issues

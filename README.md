@@ -1,105 +1,73 @@
 # Git Learning Tool Documentation
 
-## Overview
-
-The Git Learning Tool is an interactive web application designed to help beginners learn Git concepts through a block-based visual interface. The tool simulates a Git repository and provides guided lessons on essential Git operations.
-
-This application was developed as part of a Google Summer of Code (GSoC) project with Sugar Labs for integration into the MusicalBlocks GitHub repository.
-
-![Git Learning Tool Screenshot](/assets/Screenshot%202025-04-07%20031424.png)
-
-## Features
-
-- **Drag-and-Drop Git Blocks** - Execute Git commands by dragging blocks
-- **Visual Git Repository** - See commits, branches, and merges in a visual graph
-- **Interactive Lessons** - Step-by-step guides for learning Git concepts
-- **Progress Tracking** - Save and track progress through lessons
-- **MusicBlocks-Inspired UI** - Styled to match the MusicBlocks application
-
-## Documentation Structure
-
-### Core Components
-
-- [**App Component**] - Main application entry point
-- [**GitLearningTool Component**] - Primary interface for the tool
-- [**GitBlocks Component**] - Draggable blocks for Git operations
-- [**GitVisualization Component**] - Visual representation of the Git repository
-
-### Context Providers
-
-- [**GitContext**] - Manages Git repository state
-- [**LessonContext**] - Manages lesson state and progress
-
-### Hooks
-
-- [**useGitOperations**] - Hook for Git operation forms
-- [**useDrag**] - Hook for drag-and-drop functionality
-- [**useLocalStorage**] - Hook for client-side storage
-
-### Utilities
-
-- [**gitTreeRenderer**] - D3.js based Git tree visualization
-- [**queryClient**] - API client for server communication
-
-### Server Components
-
-- [**Server Overview**] - Overview of server architecture
-- [**Routes**] - API endpoint definitions
-- [**Storage**] - Data storage implementation
-- [**Database Schema**] - Database model definitions
-
-### Integration Guides
-
-- [**GitHub Integration**](/docs/GitHubIntegration.md) - Guide for GitHub API integration
-- [**MusicBlocks Integration**](/docs/MusicBlocksIntegration.md) - Guide for MusicBlocks integration
-
-## Architecture
-
-The Git Learning Tool follows a client-server architecture:
-
-```
-┌─────────────────┐     ┌─────────────────┐      ┌──────────────────┐
-│                 │     │                 │      │                  │
-│  React Frontend │◄────┤  Express Server │◄─────┤ PostgreSQL       │
-│  (SPA)          │     │  (API Backend)  │      │ Database         │
-│                 │     │                 │      │                  │
-└─────────────────┘     └─────────────────┘      └──────────────────┘
-```
-
-## Technical Stack
-
-- **Frontend**
-  - React
-  - TypeScript
-  - TanStack Query (React Query)
-  - D3.js (visualization)
-  - ShadCN UI (components)
-  - Tailwind CSS (styling)
-
-- **Backend**
-  - Express.js
-  - Node.js
-  - Drizzle ORM
-  - PostgreSQL
-
-
-
-
 This document provides detailed information about each component and file in the Git Learning Tool application.
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [File Structure](#file-structure)
-3. [Core Components](#core-components)
-4. [Context Providers](#context-providers)
-5. [Custom Hooks](#custom-hooks)
-6. [Utility Functions](#utility-functions)
-7. [Data Models](#data-models)
-8. [Styling](#styling)
-9. [Database Integration](#database-integration)
-10. [Architecture & Data Flow](#architecture--data-flow)
-11. [Troubleshooting](#troubleshooting)
+1. [Setup and Installation](#setup-and-installation)
+2. [Project Overview](#project-overview)
+3. [File Structure](#file-structure)
+4. [Core Components](#core-components)
+5. [Context Providers](#context-providers)
+6. [Custom Hooks](#custom-hooks)
+7. [Utility Functions](#utility-functions)
+8. [Data Models](#data-models)
+9. [Styling](#styling)
+10. [Database Integration](#database-integration)
+11. [Architecture & Data Flow](#architecture--data-flow)
+12. [Troubleshooting](#troubleshooting)
+
+## Setup and Installation
+
+### Prerequisites
+
+- Node.js (v14+)
+- npm or yarn
+- PostgreSQL database (if using database storage)
+- Git installed on your machine
+
+### Installation Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/git-learning-tool.git
+   cd git-learning-tool
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up database (optional)**
+   
+   If you want to use database storage instead of in-memory storage:
+   
+   - Create a PostgreSQL database
+   - Set the `DATABASE_URL` environment variable to your PostgreSQL connection string
+   - Run the database migration:
+     ```bash
+     npm run db:push
+     ```
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   
+   This will start the application on port 5000. Open `http://localhost:5000` in your browser to access the Git Learning Tool.
+
+5. **Build for production (optional)**
+   ```bash
+   npm run build
+   npm run start
+   ```
+
+### Configuration Options
+
+- **Theme**: You can customize the application theme by editing the `theme.json` file
+- **Database**: Toggle between in-memory and database storage in `server/storage.ts`
+- **Lessons**: Customize lessons in `client/src/data/lessons.ts`
 
 ## Project Overview
 

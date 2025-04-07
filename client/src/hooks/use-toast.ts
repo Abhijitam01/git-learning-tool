@@ -149,26 +149,16 @@ function toast({ ...props }: Toast) {
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
-  interface ToastOpenChangeHandler {
-    (open: boolean): void;
-  }
-
-  interface ToastDispatchProps extends Toast {
-    id: string;
-    open: boolean;
-    onOpenChange: ToastOpenChangeHandler;
-  }
-
   dispatch({
     type: "ADD_TOAST",
     toast: {
       ...props,
       id,
       open: true,
-      onOpenChange: (open: boolean) => {
+      onOpenChange: (open) => {
         if (!open) dismiss()
       },
-    } as ToastDispatchProps,
+    },
   })
 
   return {

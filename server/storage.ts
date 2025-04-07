@@ -99,7 +99,7 @@ export class DatabaseStorage implements IStorage {
           ...insertProgress,
           updatedAt: new Date(),
           // If lesson is completed and completedAt is not set, set it now
-          ...(insertProgress.completed && !existingProgress.completed
+          ...(insertProgress.completed && !existingProgress.completedAt 
               ? { completedAt: new Date() } 
               : {})
         })
@@ -113,8 +113,9 @@ export class DatabaseStorage implements IStorage {
       const [newProgress] = await db.insert(lessonProgress)
         .values({
           ...insertProgress,
-          completed: insertProgress.completed,
-          progress: insertProgress.progress
+          createdAt: now,
+          updatedAt: now,
+          completedAt: insertProgress.completed ? now : undefined
         })
         .returning();
       
