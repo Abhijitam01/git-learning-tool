@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { GitState, Commit, Branch } from '@/context/GitContext';
+import { GitState, Commit, Branch } from '@/components/GitLearningTool/types';
 
 interface RenderOptions {
   width: number;
@@ -7,192 +7,278 @@ interface RenderOptions {
   scale: number;
 }
 
+// Layout constants
+const NODE_RADIUS = 15;
+const VERTICAL_SPACING = 70;
+const HORIZONTAL_SPACING = 120;
+const BRANCH_OFFSET = 40;
+
 export function renderGitTree(
   svgElement: SVGSVGElement,
   gitState: GitState,
   options: RenderOptions
 ): void {
-  // Clear existing SVG content
-  d3.select(svgElement).selectAll("*").remove();
-  
+  const { commits, branches } = gitState;
   const { width, height, scale } = options;
   
-  // Create root group with zoom/pan
+  if (commits.length === 0) return;
+  
+  // Create main SVG element
   const svg = d3.select(svgElement);
-  const g = svg.append("g");
   
-  // Assign positions to commits for visualization
-  const commits = assignPositions(gitState.commits, gitState.branches);
+  // Clear previous rendering
+  svg.selectAll('*').remove();
   
-  // Apply scale and center the visualization
-  const maxX = Math.max(...commits.map(c => c.x || 0), 1);
-  const maxY = Math.max(...commits.map(c => c.y || 0), 1);
+  // Create a container group that will be transformed
+  const container = svg
+    .append('g')
+    .attr('transform', `scale(${scale})`);
   
-  // Calculate translation to center the graph
-  const translateX = width / 2 - (maxX * scale) / 2;
-  const translateY = height / 2 - (maxY * scale) / 2;
+  // Create layers for connections and nodes
+  const connectionsGroup = container.append('g').attr('class', 'connections');
+  const nodesGroup = container.append('g').attr('class', 'nodes');
   
-  g.attr("transform", `translate(${translateX}, ${translateY}) scale(${scale})`);
+  // Assign positions to commits
+  const processedCommits = assignPositions(commits, branches);
   
-  // Draw connections between commits
-  drawConnections(g, commits);
+  // Draw connections first (so they're behind nodes)
+  drawConnections(connectionsGroup, processedCommits);
   
   // Draw commit nodes
-  drawNodes(g, commits, gitState.currentCommit);
+  drawNodes(nodesGroup, processedCommits, gitState.currentCommit);
+  
+  // Center the visualization
+  const bounds = svgElement.getBBox();
+  const centerX = width / 2 / scale;
+  const centerY = height / 2 / scale;
+  const boundsWidth = bounds.width || 100;
+  const boundsHeight = bounds.height || 100;
+  
+  container.attr(
+    'transform',
+    `scale(${scale}) translate(${centerX - boundsWidth / 2}, ${centerY - boundsHeight / 2})`
+  );
 }
 
 function assignPositions(commits: Commit[], branches: Branch[]): Commit[] {
   if (commits.length === 0) return [];
   
-  // Create a map for quick access to commits by ID
-  const commitMap = new Map<string, Commit>();
-  commits.forEach(commit => {
-    commitMap.set(commit.id, { ...commit });
+  // Create a copy of commits to work with
+  const processedCommits = [...commits];
+  
+  // Create a map of branch names to horizontal positions
+  const branchPositions: Record<string, number> = {};
+  branches.forEach((branch, index) => {
+    branchPositions[branch.name] = index * BRANCH_OFFSET;
   });
   
-  // Find root commits (no parents)
-  const rootCommits = commits.filter(commit => !commit.parentId);
+  // Topologically sort commits (simplified approach for the demo)
+  const commitsByParent: Record<string, Commit[]> = {};
   
-  // Track which positions have been used at each level
-  const positions = new Map<number, Set<number>>();
+  // First, find root commits (no parent)
+  const rootCommits = processedCommits.filter(commit => commit.parentId === null);
   
-  // Create a copy of commits with positions
-  const positionedCommits: Commit[] = [];
+  // Group other commits by parent ID
+  processedCommits.forEach(commit => {
+    if (commit.parentId) {
+      if (!commitsByParent[commit.parentId]) {
+        commitsByParent[commit.parentId] = [];
+      }
+      commitsByParent[commit.parentId].push(commit);
+    }
+  });
   
-  // Start vertical position from the bottom
-  let maxLevel = 0;
+  // Assign vertical positions by traversing the graph from roots
+  let currentLevel = 0;
   
-  // Assign positions recursively starting from branch heads
-  const branchHeads = branches
-    .filter(branch => branch.headCommitId)
-    .map(branch => {
-      const commit = commitMap.get(branch.headCommitId!);
-      return commit ? { ...commit, color: branch.color } : null;
-    })
-    .filter(Boolean) as Commit[];
-  
-  // Function to assign positions recursively
+  // Function to recursively assign positions
   function assignPositionsRecursive(commits: Commit[], level: number) {
-    if (level > maxLevel) maxLevel = level;
-    
-    commits.forEach(commit => {
-      if (!positions.has(level)) {
-        positions.set(level, new Set<number>());
-      }
+    commits.forEach((commit, index) => {
+      // Assign vertical position
+      commit.y = level * VERTICAL_SPACING + 50;
       
-      // Find horizontal position
-      let x = 0;
-      while (positions.get(level)!.has(x)) {
-        x += 100;
-      }
+      // Assign horizontal position based on branch
+      const branchPos = branchPositions[commit.branch] || 0;
+      commit.x = HORIZONTAL_SPACING + branchPos;
       
-      // Mark position as used
-      positions.get(level)!.add(x);
-      
-      // Update commit with position
-      const updatedCommit = {
-        ...commit,
-        x,
-        y: level * 100,
-      };
-      
-      positionedCommits.push(updatedCommit);
-      
-      // Process parent commit if it exists
-      if (commit.parentId) {
-        const parent = commitMap.get(commit.parentId);
-        if (parent) {
-          assignPositionsRecursive([parent], level + 1);
-        }
+      // If this commit has children, process them next
+      const children = commitsByParent[commit.id] || [];
+      if (children.length > 0) {
+        assignPositionsRecursive(children, level + 1);
       }
     });
   }
   
-  // Start assigning positions from branch heads
-  assignPositionsRecursive(branchHeads, 0);
+  // Start assigning from root commits
+  assignPositionsRecursive(rootCommits, 0);
   
-  // Process any unassigned commits (should be rare)
-  const assignedCommitIds = new Set(positionedCommits.map(c => c.id));
-  const unassignedCommits = commits.filter(c => !assignedCommitIds.has(c.id));
-  
-  if (unassignedCommits.length > 0) {
-    assignPositionsRecursive(unassignedCommits, maxLevel + 1);
-  }
-  
-  return positionedCommits;
+  return processedCommits;
 }
 
 function drawConnections(group: d3.Selection<SVGGElement, unknown, null, undefined>, commits: Commit[]): void {
-  // Create a map for quick access to commits by ID
-  const commitMap = new Map<string, Commit>();
-  commits.forEach(commit => {
-    commitMap.set(commit.id, commit);
-  });
-  
-  // Draw connections from each commit to its parent
   commits.forEach(commit => {
     if (commit.parentId) {
-      const parent = commitMap.get(commit.parentId);
-      
-      if (parent && parent.x !== undefined && parent.y !== undefined) {
-        // Draw line from commit to parent
-        group.append("path")
-          .attr("d", `M${commit.x},${commit.y} L${parent.x},${parent.y}`)
-          .attr("stroke", commit.color || "#888")
-          .attr("stroke-width", 2)
-          .attr("fill", "none");
+      const parent = commits.find(c => c.id === commit.parentId);
+      if (parent && commit.x !== undefined && commit.y !== undefined && 
+          parent.x !== undefined && parent.y !== undefined) {
+          
+        // Calculate path control points for a curved line (MusicBlocks style)
+        const startX = parent.x;
+        const startY = parent.y;
+        const endX = commit.x;
+        const endY = commit.y;
+        const midY = (startY + endY) / 2;
+        
+        // Create a nice curved path MusicBlocks style
+        const path = d3.path();
+        path.moveTo(startX, startY);
+        
+        // Different path style based on branch relationship
+        if (Math.abs(startX - endX) > 10) {
+          // Curved connections between different branches
+          const controlPoint1X = startX;
+          const controlPoint1Y = midY;
+          const controlPoint2X = endX;
+          const controlPoint2Y = midY;
+          
+          path.bezierCurveTo(
+            controlPoint1X, controlPoint1Y,
+            controlPoint2X, controlPoint2Y,
+            endX, endY
+          );
+        } else {
+          // Straighter line for same branch
+          path.lineTo(endX, endY);
+        }
+        
+        // Draw the path with decorative styling
+        group
+          .append('path')
+          .attr('d', path.toString())
+          .attr('fill', 'none')
+          .attr('stroke', commit.color || '#26A69A')
+          .attr('stroke-width', 2)
+          .attr('stroke-linecap', 'round')
+          .attr('class', 'git-edge');
+          
+        // Add subtle gradient overlay for depth effect
+        group
+          .append('path')
+          .attr('d', path.toString())
+          .attr('fill', 'none')
+          .attr('stroke', 'white')
+          .attr('stroke-width', 1)
+          .attr('stroke-opacity', 0.3)
+          .attr('stroke-dasharray', '2,4')
+          .attr('class', 'git-edge-highlight');
       }
     }
   });
 }
 
 function drawNodes(
-  group: d3.Selection<SVGGElement, unknown, null, undefined>,
+  group: d3.Selection<SVGGElement, unknown, null, undefined>, 
   commits: Commit[],
-  currentCommit: string | null
+  currentCommitId: string | null
 ): void {
-  // Draw each commit as a hexagon
   commits.forEach(commit => {
-    const hexagonSize = 20;
-    const hexagonPath = hexagonPoints(commit.x!, commit.y!, hexagonSize);
+    if (commit.x === undefined || commit.y === undefined) return;
     
-    // Node group
-    const nodeGroup = group.append("g")
-      .attr("class", "commit-node")
-      .attr("data-id", commit.id);
+    // Create a group for each commit node with pointer cursor and hover effects
+    const nodeGroup = group
+      .append('g')
+      .attr('transform', `translate(${commit.x},${commit.y})`)
+      .attr('class', 'commit-node')
+      .attr('data-id', commit.id)
+      .style('cursor', 'pointer');
     
-    // Hexagon shape
-    nodeGroup.append("path")
-      .attr("d", hexagonPath)
-      .attr("fill", commit.color || "#2196F3")
-      .attr("stroke", currentCommit === commit.id ? "#333" : "#fff")
-      .attr("stroke-width", currentCommit === commit.id ? 3 : 1)
-      .attr("cursor", "pointer");
-    
-    // First character of commit message
-    nodeGroup.append("text")
-      .attr("x", commit.x!)
-      .attr("y", commit.y! + 5)
-      .attr("text-anchor", "middle")
-      .attr("fill", "#fff")
-      .attr("font-size", "12px")
-      .attr("cursor", "pointer")
-      .text(commit.message.charAt(0));
-    
-    // Tooltip
-    nodeGroup.append("title")
-      .text(`${commit.message}\n${new Date(commit.timestamp).toLocaleString()}\nID: ${commit.id.slice(0, 8)}`);
-  });
-}
+    // MusicBlocks-style node (hexagon shape for commits)
+    const hexSize = NODE_RADIUS * 1.1;
+    const hexagonPoints = [
+      [0, -hexSize],                        // top point
+      [hexSize * 0.866, -hexSize * 0.5],    // top right
+      [hexSize * 0.866, hexSize * 0.5],     // bottom right
+      [0, hexSize],                         // bottom point
+      [-hexSize * 0.866, hexSize * 0.5],    // bottom left
+      [-hexSize * 0.866, -hexSize * 0.5],   // top left
+    ].map(point => point.join(',')).join(' ');
 
-// Helper function to generate hexagon points
-function hexagonPoints(x: number, y: number, size: number): string {
-  const points = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i;
-    const px = x + size * Math.cos(angle);
-    const py = y + size * Math.sin(angle);
-    points.push(`${px},${py}`);
-  }
-  return `M${points.join("L")}Z`;
+    // Draw hexagon for commit
+    nodeGroup
+      .append('polygon')
+      .attr('points', hexagonPoints)
+      .attr('fill', commit.color || '#26A69A')
+      .attr('stroke', currentCommitId === commit.id ? '#000' : '#444')
+      .attr('stroke-width', currentCommitId === commit.id ? 3 : 1.5)
+      .attr('class', 'git-node git-node-commit')
+      .attr('filter', currentCommitId === commit.id ? 'drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3))' : 'none');
+    
+    // Add small center circle for emphasis (MusicBlocks style)
+    nodeGroup
+      .append('circle')
+      .attr('r', NODE_RADIUS * 0.3)
+      .attr('fill', 'white')
+      .attr('stroke', '#444')
+      .attr('stroke-width', 1);
+    
+    // Draw message box with subtle styling (MusicBlocks style)
+    const textPadding = 8;
+    const messageText = commit.message.length > 20 ? 
+      commit.message.slice(0, 20) + '...' : commit.message;
+    const textWidth = messageText.length * 7;  // Rough estimation of text width
+    
+    nodeGroup
+      .append('rect')
+      .attr('x', -textWidth/2 - textPadding)
+      .attr('y', NODE_RADIUS * 1.4)
+      .attr('width', textWidth + textPadding*2)
+      .attr('height', 22)
+      .attr('rx', 4)
+      .attr('ry', 4)
+      .attr('fill', commit.color || '#26A69A')
+      .attr('fill-opacity', 0.2)
+      .attr('stroke', commit.color || '#26A69A')
+      .attr('stroke-width', 1)
+      .attr('stroke-opacity', 0.5);
+    
+    // Add commit message with improved styling
+    nodeGroup
+      .append('text')
+      .attr('class', 'node-label git-node-text')
+      .attr('text-anchor', 'middle')
+      .attr('dy', NODE_RADIUS * 2)
+      .attr('font-weight', 'medium')
+      .attr('fill', '#333')
+      .text(messageText);
+    
+    // Add commit ID (shortened) with improved styling
+    nodeGroup
+      .append('text')
+      .attr('class', 'node-id git-node-id')
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
+      .attr('font-family', 'monospace')
+      .attr('dy', NODE_RADIUS * 2.8)
+      .attr('fill', '#666')
+      .text(commit.id.slice(0, 7));
+    
+    // Add tooltip
+    nodeGroup
+      .append('title')
+      .text(`${commit.message}\n\nID: ${commit.id}\nBranch: ${commit.branch}`);
+    
+    // If this is the current commit, add a highlight effect
+    if (currentCommitId === commit.id) {
+      // Add a MusicBlocks-style pulse effect for current node
+      nodeGroup
+        .append('circle')
+        .attr('r', NODE_RADIUS * 1.5)
+        .attr('fill', 'none')
+        .attr('stroke', commit.color || '#26A69A')
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '5,5')
+        .attr('class', 'animate-pulse')
+        .attr('opacity', 0.6);
+    }
+  });
 }
