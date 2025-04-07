@@ -1,9 +1,10 @@
-import { users, type User, type InsertUser, gitSessions, type GitSession, type InsertGitSession, lessonProgress, type LessonProgress, type InsertLessonProgress } from "@shared/schema";
+import { users, type User, type InsertUser, GitSession, InsertGitSession, LessonProgress, InsertLessonProgress, gitSessions, lessonProgress } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
+// Extended storage interface including Git Learning Tool methods
 export interface IStorage {
-  // User methods
+  // User methods (from template)
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -21,94 +22,106 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
     return user;
   }
 
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  // Git Session methods
   async getGitSessions(): Promise<GitSession[]> {
-    return db.select().from(gitSessions);
+    return await db.select().from(gitSessions);
   }
 
   async getGitSession(id: number): Promise<GitSession | undefined> {
     const [session] = await db.select().from(gitSessions).where(eq(gitSessions.id, id));
-    return session || undefined;
+    return session;
   }
 
   async createGitSession(insertSession: InsertGitSession): Promise<GitSession> {
-    const [session] = await db
-      .insert(gitSessions)
-      .values(insertSession)
+    const now = new Date();
+    const [session] = await db.insert(gitSessions)
+      .values({
+        ...insertSession,
+        createdAt: now,
+        updatedAt: now
+      })
       .returning();
     return session;
   }
 
   async updateGitSession(
     id: number,
-    updateSession: Partial<InsertGitSession>
+    updateData: Partial<InsertGitSession>
   ): Promise<GitSession | undefined> {
-    const [session] = await db
-      .update(gitSessions)
+    const [updatedSession] = await db.update(gitSessions)
       .set({
-        ...updateSession,
-        updatedAt: new Date(),
+        ...updateData,
+        updatedAt: new Date()
       })
       .where(eq(gitSessions.id, id))
       .returning();
-    return session || undefined;
+    
+    return updatedSession;
   }
 
+  // Lesson Progress methods
   async getLessonProgress(): Promise<LessonProgress[]> {
-    return db.select().from(lessonProgress);
+    return await db.select().from(lessonProgress);
   }
 
   async getLessonProgressByLessonId(lessonId: string): Promise<LessonProgress | undefined> {
-    const [progress] = await db
-      .select()
+    const [progress] = await db.select()
       .from(lessonProgress)
       .where(eq(lessonProgress.lessonId, lessonId));
-    return progress || undefined;
+    
+    return progress;
   }
 
   async upsertLessonProgress(insertProgress: InsertLessonProgress): Promise<LessonProgress> {
-    const { lessonId, userId } = insertProgress;
-    
-    // Check if progress exists
-    const existingProgress = await this.getLessonProgressByLessonId(lessonId);
+    // Check if there's existing progress for this lesson and user
+    const existingProgress = await this.getLessonProgressByLessonId(insertProgress.lessonId);
     
     if (existingProgress) {
       // Update existing progress
-      const [progress] = await db
-        .update(lessonProgress)
+      const [updatedProgress] = await db.update(lessonProgress)
         .set({
           ...insertProgress,
           updatedAt: new Date(),
+          // If lesson is completed and completedAt is not set, set it now
+          ...(insertProgress.completed && !existingProgress.completed
+              ? { completedAt: new Date() } 
+              : {})
         })
         .where(eq(lessonProgress.id, existingProgress.id))
         .returning();
-      return progress;
+      
+      return updatedProgress;
     } else {
       // Create new progress
-      const [progress] = await db
-        .insert(lessonProgress)
-        .values(insertProgress)
+      const now = new Date();
+      const [newProgress] = await db.insert(lessonProgress)
+        .values({
+          ...insertProgress,
+          completed: insertProgress.completed,
+          progress: insertProgress.progress
+        })
         .returning();
-      return progress;
+      
+      return newProgress;
     }
   }
 }
 
+// Switch from MemStorage to DatabaseStorage
 export const storage = new DatabaseStorage();

@@ -8,51 +8,35 @@ import { GitProvider } from "@/context/GitContext";
 import { LessonProvider } from "@/context/LessonContext";
 
 /**
- * Fixed provider structure to avoid circular dependency issues between 
- * GitProvider and LessonProvider. Both providers need to be at the same level
- * in the component tree to allow proper communication between them.
+ * Important: To avoid circular dependency issues between GitContext and LessonContext,
+ * we need to ensure the providers are structured correctly. GitProvider must wrap LessonProvider
+ * since LessonContext depends on GitContext for step validation.
  */
 
-// Both providers are at the same level - no circular dependency
-const GitLearningToolWithProviders = () => {
-  return (
-    <GitProvider>
-      <LessonProvider>
-        <GitLearningTool />
-      </LessonProvider>
-    </GitProvider>
-  );
-};
+// Wrap the GitLearningTool component with both providers
+const HomeRoute = () => (
+  <GitProvider>
+    <LessonProvider>
+      <GitLearningTool />
+    </LessonProvider>
+  </GitProvider>
+);
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={GitLearningToolWithProviders} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+// Simple router
+const AppRouter = () => (
+  <Switch>
+    <Route path="/" component={HomeRoute} />
+    <Route component={NotFound} />
+  </Switch>
+);
 
+// Main App component
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Wrap the entire app with both providers at the same level */}
-      <GitProvider>
-        <LessonProvider>
-          <AppContent />
-        </LessonProvider>
-      </GitProvider>
-    </QueryClientProvider>
-  );
-}
-
-// This component is created to consume context after providers are set up
-function AppContent() {
-  return (
-    <>
-      <Router />
+      <AppRouter />
       <Toaster />
-    </>
+    </QueryClientProvider>
   );
 }
 

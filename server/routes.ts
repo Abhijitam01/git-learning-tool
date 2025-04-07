@@ -1,139 +1,127 @@
-import { Express } from 'express';
-import { Server } from 'http';
-import { storage } from './storage';
-import { insertUserSchema, insertGitSessionSchema, insertLessonProgressSchema } from '@shared/schema';
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { gitSessions, insertGitSessionSchema, insertLessonProgressSchema } from "../shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // User routes
-  app.get('/api/users/:id', async (req, res) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
-    }
-    
-    try {
-      const user = await storage.getUser(id);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      
-      return res.json(user);
-    } catch (error) {
-      console.error('Error getting user:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  });
+  // API routes for Git Learning Tool
 
-  app.post('/api/users', async (req, res) => {
-    try {
-      const newUser = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(newUser);
-      return res.status(201).json(user);
-    } catch (error) {
-      console.error('Error creating user:', error);
-      return res.status(400).json({ error: 'Invalid user data' });
-    }
-  });
-
-  // Git session routes
-  app.get('/api/git-sessions', async (req, res) => {
+  // Get all Git sessions for a user
+  app.get("/api/git-sessions", async (req, res) => {
     try {
       const sessions = await storage.getGitSessions();
-      return res.json(sessions);
+      res.json(sessions);
     } catch (error) {
-      console.error('Error getting git sessions:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+      console.error("Error getting git sessions:", error);
+      res.status(500).json({ message: "Failed to get git sessions" });
     }
   });
 
-  app.get('/api/git-sessions/:id', async (req, res) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid session ID' });
-    }
-    
+  // Get a specific Git session
+  app.get("/api/git-sessions/:id", async (req, res) => {
     try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid session ID" });
+      }
+      
       const session = await storage.getGitSession(id);
       if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
+        return res.status(404).json({ message: "Session not found" });
       }
       
-      return res.json(session);
+      res.json(session);
     } catch (error) {
-      console.error('Error getting git session:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+      console.error("Error getting git session:", error);
+      res.status(500).json({ message: "Failed to get git session" });
     }
   });
 
-  app.post('/api/git-sessions', async (req, res) => {
+  // Create a new Git session
+  app.post("/api/git-sessions", async (req, res) => {
     try {
-      const newSession = insertGitSessionSchema.parse(req.body);
-      const session = await storage.createGitSession(newSession);
-      return res.status(201).json(session);
-    } catch (error) {
-      console.error('Error creating git session:', error);
-      return res.status(400).json({ error: 'Invalid session data' });
-    }
-  });
-
-  app.patch('/api/git-sessions/:id', async (req, res) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid session ID' });
-    }
-    
-    try {
-      const updateData = req.body;
-      const updatedSession = await storage.updateGitSession(id, updateData);
+      const result = insertGitSessionSchema.safeParse(req.body);
       
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid session data",
+          errors: result.error.errors 
+        });
+      }
+      
+      const session = await storage.createGitSession(result.data);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Error creating git session:", error);
+      res.status(500).json({ message: "Failed to create git session" });
+    }
+  });
+
+  // Update a Git session
+  app.put("/api/git-sessions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid session ID" });
+      }
+      
+      const sessionSchema = z.object({
+        name: z.string().optional(),
+        data: z.any().optional(),
+      });
+      
+      const result = sessionSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid session data",
+          errors: result.error.errors 
+        });
+      }
+      
+      const updatedSession = await storage.updateGitSession(id, result.data);
       if (!updatedSession) {
-        return res.status(404).json({ error: 'Session not found' });
+        return res.status(404).json({ message: "Session not found" });
       }
       
-      return res.json(updatedSession);
+      res.json(updatedSession);
     } catch (error) {
-      console.error('Error updating git session:', error);
-      return res.status(400).json({ error: 'Invalid update data' });
+      console.error("Error updating git session:", error);
+      res.status(500).json({ message: "Failed to update git session" });
     }
   });
 
-  // Lesson progress routes
-  app.get('/api/lesson-progress', async (req, res) => {
+  // Update or create lesson progress
+  app.post("/api/lesson-progress", async (req, res) => {
+    try {
+      const result = insertLessonProgressSchema.safeParse(req.body);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid lesson progress data",
+          errors: result.error.errors 
+        });
+      }
+      
+      const progress = await storage.upsertLessonProgress(result.data);
+      res.status(201).json(progress);
+    } catch (error) {
+      console.error("Error updating lesson progress:", error);
+      res.status(500).json({ message: "Failed to update lesson progress" });
+    }
+  });
+
+  // Get all lesson progress for a user
+  app.get("/api/lesson-progress", async (req, res) => {
     try {
       const progress = await storage.getLessonProgress();
-      return res.json(progress);
+      res.json(progress);
     } catch (error) {
-      console.error('Error getting lesson progress:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+      console.error("Error getting lesson progress:", error);
+      res.status(500).json({ message: "Failed to get lesson progress" });
     }
   });
 
-  app.get('/api/lesson-progress/:lessonId', async (req, res) => {
-    const lessonId = req.params.lessonId;
-    
-    try {
-      const progress = await storage.getLessonProgressByLessonId(lessonId);
-      if (!progress) {
-        return res.status(404).json({ error: 'Progress not found' });
-      }
-      
-      return res.json(progress);
-    } catch (error) {
-      console.error('Error getting lesson progress:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/lesson-progress', async (req, res) => {
-    try {
-      const progressData = insertLessonProgressSchema.parse(req.body);
-      const progress = await storage.upsertLessonProgress(progressData);
-      return res.status(201).json(progress);
-    } catch (error) {
-      console.error('Error creating/updating lesson progress:', error);
-      return res.status(400).json({ error: 'Invalid progress data' });
-    }
-  });
-
-  return app;
+  const httpServer = createServer(app);
+  return httpServer;
 }

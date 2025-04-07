@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import GitBlocks from '@/components/GitLearningTool/GitBlocks';
-import GitVisualization from '@/components/GitLearningTool/GitVisualization';
-import InstructionPanel from '@/components/GitLearningTool/InstructionPanel';
-import GitToolbar from '@/components/GitLearningTool/GitToolbar';
-import HelpModal from '@/components/GitLearningTool/HelpModal';
-import LessonCard from '@/components/GitLearningTool/LessonCard';
-import { useGit } from '@/context/GitContext';
-import { useLesson } from '@/context/LessonContext';
-import { useGitOperations } from '@/hooks/useGitOperations';
+import GitBlocks from '../components/GitLearningTool/GitBlocks';
+import GitVisualization from '../components/GitLearningTool/GitVisualization';
+import InstructionPanel from '../components/GitLearningTool/InstructionPanel';
+import GitToolbar from '../components/GitLearningTool/GitToolbar';
+import HelpModal from '../components/GitLearningTool/HelpModal';
+import LessonCard from '../components/GitLearningTool/LessonCard';
+import { useGit } from '../context/GitContext';
+import { useLesson } from '../context/LessonContext';
+import { useGitOperations } from '../hooks/useGitOperations';
 import {
   Dialog,
   DialogContent,
@@ -16,21 +16,50 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Button } from '../components/ui/button';
+import { Label } from '../components/ui/label';
+import { useToast } from '../hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../components/ui/alert-dialog';
 
-const GitLearningTool: React.FC = () => {
+// Separate the GitLearningTool implementation from the component that uses contexts
+// This helps avoid circular dependency issues
+const GitLearningToolImpl: React.FC<{
+  state: GitState;
+  saveState: () => void;
+  resetState: () => void;
+  lessons: Lesson[];
+  lessonProgress: Record<string, LessonProgress>;
+  currentLesson: Lesson | null;
+  setCurrentLesson: (id: string) => void;
+  formState: {
+    isOpen: boolean;
+    blockType: GitBlockType | null;
+    inputs: Record<string, string>;
+  };
+  openForm: (blockType: GitBlockType) => void;
+  closeForm: () => void;
+  handleInputChange: (name: string, value: string) => void;
+  executeOperation: () => boolean;
+}> = ({
+  state,
+  saveState,
+  resetState,
+  lessons,
+  lessonProgress,
+  currentLesson,
+  setCurrentLesson,
+  formState,
+  openForm,
+  closeForm,
+  handleInputChange,
+  executeOperation
+}) => {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showDocumentation, setShowDocumentation] = useState(false);
   const [scale, setScale] = useState(1);
-  const { state, saveState, resetState } = useGit();
-  const { lessons, lessonProgress, currentLesson, setCurrentLesson } = useLesson();
-  const { formState, openForm, closeForm, handleInputChange, executeOperation } = useGitOperations();
   const { toast } = useToast();
 
   const handleSave = () => {
@@ -375,6 +404,44 @@ const GitLearningTool: React.FC = () => {
                         <li>Follow guided lessons to learn Git concepts step-by-step</li>
                       </ol>
                     </div>
+                    
+                    <div className="p-4 border rounded-lg bg-green-50">
+                      <h3 className="font-bold text-green-800 mb-2">Core Features</h3>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-start">
+                          <i className="fas fa-project-diagram text-green-500 mt-1 mr-2"></i>
+                          <span><strong>Visualization:</strong> Interactive D3.js-powered Git repository visualization</span>
+                        </div>
+                        <div className="flex items-start">
+                          <i className="fas fa-cubes text-green-500 mt-1 mr-2"></i>
+                          <span><strong>Block-based:</strong> Intuitive drag & drop Git command blocks</span>
+                        </div>
+                        <div className="flex items-start">
+                          <i className="fas fa-graduation-cap text-green-500 mt-1 mr-2"></i>
+                          <span><strong>Guided learning:</strong> Step-by-step lessons for different Git concepts</span>
+                        </div>
+                        <div className="flex items-start">
+                          <i className="fas fa-save text-green-500 mt-1 mr-2"></i>
+                          <span><strong>Persistence:</strong> Save progress locally or to a database</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-bold text-gray-800 mb-2">How Visualization Works</h3>
+                      <p className="text-sm text-gray-700 mb-2">
+                        The D3.js powered visualization shows:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                        <li><span className="font-medium text-blue-600">Commits</span> - Shown as colored circles representing snapshots</li>
+                        <li><span className="font-medium text-green-600">Branches</span> - Shown as colored paths connecting commits</li>
+                        <li><span className="font-medium text-orange-600">HEAD pointer</span> - Current active position in the repository</li>
+                        <li><span className="font-medium text-purple-600">Merge commits</span> - Special commits joining two branches</li>
+                      </ul>
+                      <p className="text-sm text-gray-500 mt-2 italic">
+                        <i className="fas fa-info-circle mr-1"></i> Hover over commits to see more details
+                      </p>
+                    </div>
                   </TabsContent>
                   
                   <TabsContent value="blocks" className="space-y-4">
@@ -440,6 +507,66 @@ const GitLearningTool: React.FC = () => {
                       </ul>
                       <div className="mt-3 text-sm text-amber-600">
                         <i className="fas fa-tools mr-1"></i> This feature is currently in development.
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="p-4 border rounded-lg bg-blue-50">
+                        <h3 className="font-bold text-blue-800 mb-2">How GitHub Works</h3>
+                        <p className="text-sm text-gray-700 mb-2">
+                          GitHub is a web-based platform for version control and collaboration using Git:
+                        </p>
+                        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                          <li>Hosts Git repositories in the cloud</li>
+                          <li>Provides collaboration features like issues, pull requests</li>
+                          <li>Offers project management tools</li>
+                          <li>Enables code reviews and discussions</li>
+                        </ul>
+                      </div>
+                      
+                      <div className="p-4 border rounded-lg bg-indigo-50">
+                        <h3 className="font-bold text-indigo-800 mb-2">GitHub vs. Git</h3>
+                        <div className="text-sm text-gray-700">
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <div className="font-semibold text-center">Git</div>
+                            <div className="font-semibold text-center">GitHub</div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 border-t pt-1">
+                            <div>Version control system</div>
+                            <div>Hosting service for Git repositories</div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 border-t pt-1">
+                            <div>Command-line tool</div>
+                            <div>Web-based interface</div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 border-t pt-1">
+                            <div>Local on your computer</div>
+                            <div>Cloud-based service</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 border rounded-lg bg-green-50">
+                      <h3 className="font-bold text-green-800 mb-2">GitHub Authentication</h3>
+                      <p className="text-sm text-gray-700 mb-2">
+                        For GitHub integration, we'll support multiple authentication methods:
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-start">
+                          <i className="fas fa-key text-green-600 mt-1 mr-2"></i>
+                          <div>
+                            <div className="font-medium">Personal Access Tokens</div>
+                            <div className="text-xs text-gray-500">Secure tokens with specific permissions</div>
+                          </div>
+                        </div>
+                        <div className="flex items-start">
+                          <i className="fas fa-fingerprint text-green-600 mt-1 mr-2"></i>
+                          <div>
+                            <div className="font-medium">OAuth Authentication</div>
+                            <div className="text-xs text-gray-500">Secure authorization flow</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
@@ -518,6 +645,31 @@ const GitLearningTool: React.FC = () => {
       {/* Help Modal */}
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
+  );
+};
+
+// Create the top-level GitLearningTool component that gets the context values
+// and passes them to the implementation
+const GitLearningTool: React.FC = () => {
+  const { state, saveState, resetState } = useGit();
+  const { lessons, lessonProgress, currentLesson, setCurrentLesson } = useLesson();
+  const { formState, openForm, closeForm, handleInputChange, executeOperation } = useGitOperations();
+  
+  return (
+    <GitLearningToolImpl
+      state={state}
+      saveState={saveState}
+      resetState={resetState}
+      lessons={lessons}
+      lessonProgress={lessonProgress}
+      currentLesson={currentLesson}
+      setCurrentLesson={setCurrentLesson}
+      formState={formState}
+      openForm={openForm}
+      closeForm={closeForm}
+      handleInputChange={handleInputChange}
+      executeOperation={executeOperation}
+    />
   );
 };
 
